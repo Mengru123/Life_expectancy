@@ -3,6 +3,8 @@ library(plyr)
 library(reshape2)
 options(digits = 12)
 
+# Calculate LE for CLSCs in PopHR data, 1998-2014 -------------------------
+
 # input datasets
 df.denom = read.csv("Data/pophr_public_le_table_denom.csv", header = FALSE, stringsAsFactors = FALSE)
 names(df.denom) = c("clsc", "age", "count", "year")
@@ -28,18 +30,18 @@ df.num = as.data.frame(xtabs(df.num$count ~., df.num)) # 64678/108528 have Freq 
 df.denom$age = as.numeric(as.character(df.denom$age)) # if not as character then age0 will disappear
 df.ori.denom = df.denom
 df.denom$age_eld = ifelse(df.denom$age >90, 90, df.denom$age)
-df.denom$age_cat = cut(df.denom$age_eld, c(-1, seq(20, 100, 10)),labels = c(1:9))
+df.denom$age_cat = cut(df.denom$age_eld, c(-1, seq(20, 100, 10)), right= FALSE, labels = c(1:9))
 df.denom = df.denom[, c("clsc", "year", "age_cat", "Freq")]
 df.denom = as.data.frame(xtabs(df.denom$Freq ~., df.denom))
 
 df.num$age = as.numeric(as.character(df.num$age))
 df.ori.num = df.num
 df.num$age_eld = ifelse(df.num$age >90, 90, df.num$age)
-df.num$age_cat = cut(df.num$age_eld, c(-1, seq(20, 100, 10)), labels = c(1:9))
+df.num$age_cat = cut(df.num$age_eld, c(-1, seq(20, 100, 10)), right = FALSE, labels = c(1:9))
 df.num = df.num[, c("clsc", "year", "age_cat", "Freq")]
 df.num = as.data.frame(xtabs(df.num$Freq ~., df.num))
 
-# Group 10-consecutive years for 2011,2014, 8-consecutive years for 2006 ------------------------------------------------------------
+# Group 10-consecutive years for 2011,2014, 9-consecutive years for 2006 ------------------------------------------------------------
 group_year = function(df) {
     names = dput(colnames(df))
     df$year = as.integer(as.character(df$year))
@@ -67,12 +69,13 @@ names(df) = c("clsc", "age_cat", "year", "deaths", "pop" )
 df$rate = df$deaths/df$pop
 df = df[, c("clsc",  "age_cat","year", "rate", "pop")]
 df.sp = split(df, df$clsc)
+rm(df.denom); rm(df.num); rm(df)
 
 df.ori = join(df.ori.num, df.ori.denom, by = c("clsc", "age", "value"))
 names(df.ori) = c("age", "clsc", "year", "deaths", "pop" )
 df.ori.sp = split(df.ori, df.ori$clsc)
 
-# create life table -------------------------------------------------------
+# create life table component ------------------------------------------------------
 # calculate the death probabilites
 constantC = function(df){
     df$age = as.numeric(as.character(df$age))
@@ -107,28 +110,35 @@ add_death_prob = function(df) {
 }
 df.sp = lapply(df.sp, function(x) add_death_prob(x))
 
-# calculate number of death based on fictitious cohor of 100,000 newborns
-df = df.sp$`6011`
-df = split(df, df$year)
-df1= df$`2006`
+# calculate life table components based on fictitious cohort of 100,000 newborns
+df.sp = lapply(df.sp, function(x) split(x, x$year))
 
-lo = 100000
-for (i in 1:length(df1$age_cat)) {
-    df1$num_d[i] = lo*df1$d_prob[i]
-    lo = lo-df1$num_d[i]
-    df1$num_surv[i] = lo 
-}
-df1$surv_prob = 1-df1$d_prob
+life_table_comp = function(df){
+    lo = 100000
+    for (i in 1:length(df$age_cat)) {
+        df$num_d[i] = lo*df$d_prob[i]
+        lo = lo-df$num_d[i]
+        df$num_surv[i] = lo  }
+    df$surv_prob = 1-df$d_prob
+    df$num_live = ifelse(df$age_cat ==1, 20*(df$num_surv + df$num_d*0.5), 
+                         ifelse((df$age_cat >=2 & df$age_cat <=8), 10*(df$num_surv + df$num_d*0.5),df$num_surv*(1/df$rate)))
+    return(df)
+}   
 
-df1$num_live = ifelse(df1$age_cat ==1, 20*(df1$num_surv + df1$num_d*0.5), ifelse((df1$age_cat >=2 & df1$age_cat <=8), 10*(df1$num_surv + df1$num_d*0.5),df1$num_surv*(1/df1$rate)))
-T= sum(df1$num_live)
-le= T/100000
+df.sp = lapply(df.sp, function(x) {
+    lapply(x, function(x){
+        life_table_comp(x)
+    })
+})
 
-# df_sp = lapply(df_sp, function(x) {x[!names(x) %in% c("clsc")]})
-# df_spt = lapply(df_sp, function(x) melt(x, id.vars = c("year", "age_cat")))
-# df_spl = lapply(df_spt, function(x) split(x, f = x$variable))
-# df_spl = lapply(df_spl, function(x){lapply(x, function(x){x[!names(x) %in% c("variable")]})})
-# df_spl = lapply(df_spl, function(x) {lapply(x, function(x) {reshape(x, idvar = "age_cat", timevar = "year",direction = "wide")})})
-# df_spl = lapply(df_spl, function(x){lapply(x, function(x){x[!names(x) %in% c("age_cat")]})})
-# df_spi = lapply(df_spl, function(x) {lapply(x, function(x) {as.matrix(x)})})
+LE = lapply(df.sp, function(x) {
+    lapply(x, function(x){
+        T= sum(x$num_live)
+        le= T/100000
+        return(le)
+    })
+})
 
+# LE table for all CLSC/year combinations
+df = as.data.frame(matrix(unlist(LE), nrow=length(unlist(LE[1])), dimnames = list(NULL, names(LE))), row.names = names(LE[[1]]))
+rm(df.sp); rm(LE)
