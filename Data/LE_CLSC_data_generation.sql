@@ -12,6 +12,7 @@ inner join
              'YYYY-MM-dd') AS midyear
 from ref.patient_ranges) as m
   on range @> m.midyear :: timestamp;
+select * from LE_table;
 
 -- create LE_table_demon contains No.of people contribute to denominator by age,CLSC, and yr in cohort
 -- group people who are 85+ (do it in R after checking whether need to group multiple years), & delete the people who are below 0-year-old
