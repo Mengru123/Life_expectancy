@@ -24,5 +24,7 @@ df.clsc = create_LE(df1.rounte = "Data/1. CLSC/pophr_public_le_table_denom.csv",
                    max_age = 90, yr1 = 2006, yr2 = 2011, yr3 = 2014, n1 = 9, n2 = 10, n3 =10, 
                    max_age_cat = 9, n_cat1 = 20, n_cat2max = 10)
 
-write.csv(df.rss, file = "C:/Users/Mengru/df.rss.csv")
-write.csv(df.clsc, file = "C:/Users/Mengru/df.clsc.csv")
+write.csv(df.rss, file = "Output/LE_RSS.csv")
+write.csv(df.clsc, file = "Output/LE_CLSA.csv")
+write.csv(df.rls, file = "Output/LE_RLS.csv")
+
