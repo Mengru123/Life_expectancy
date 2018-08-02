@@ -24,6 +24,7 @@ df.clsc = create_LE(df1.rounte = "Data/1. CLSC/pophr_public_le_table_denom.csv",
                    max_age = 90, yr1 = 2006, yr2 = 2011, yr3 = 2014, n1 = 9, n2 = 10, n3 =10, 
                    max_age_cat = 9, n_cat1 = 20, n_cat2max = 10)
 
+<<<<<<< HEAD
 # write.csv(df.rss, file = "Output/LE_RSS.csv")
 # write.csv(df.clsc, file = "Output/LE_CLSA.csv")
 # write.csv(df.rls, file = "Output/LE_RLS.csv")
@@ -69,3 +70,9 @@ df.clsc.comp = create_LE_1yr(df1.rounte = "Data/1. CLSC/pophr_public_le_table_de
 # write.csv(t, "C:/Users/Mengru/Desktop/rls_3mtd.csv")
 # t= rbind(df.rss, df.rss.3yr, df.rss.comp)
 # write.csv(t, "C:/Users/Mengru/Desktop/rss_3mtd.csv")
+=======
+write.csv(df.rss, file = "Output/LE_RSS.csv")
+write.csv(df.clsc, file = "Output/LE_CLSA.csv")
+write.csv(df.rls, file = "Output/LE_RLS.csv")
+
+>>>>>>> a84da791686097a910c9fc9b7d7aed0f9b21ae80
